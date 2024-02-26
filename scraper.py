@@ -91,4 +91,5 @@ class GlobalScraper:
         return city
 
 
+
 scraper = GlobalScraper()
