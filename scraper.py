@@ -7,49 +7,68 @@ import re
 from region import *
 from database import *
 
-TABLE_NAME = "RNJAPI"
+
+class Scraper:
+    TABLE_NAME = "RNJAPI"
+
+    def __init__(self):
+        self.database = Database()
+        self.database.create_rnjapi_table(Scraper.TABLE_NAME)
+
+    @staticmethod
+    def create_folder_if_not_exists(folder_path):
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+    # noinspection PyBroadException
+    @staticmethod
+    def get_page(url, method, content_path, post_data=None):
+        try:
+            if method == 'GET':
+                response = requests.get(url)
+            else:
+                response = requests.post(url, data=post_data, headers={'Accept-Encoding': ''}, stream=True)
+
+            if response.status_code == 200:
+                content = response.text
+                with open(content_path, 'w', encoding='utf-8') as file:
+                    file.write(content)
+                print(f'Page {content_path} successfully downloaded.')
+            else:
+                print(f'Download failed. Status code : {response.status_code}')
+        except Exception:
+            print(f" Page {url} download error")
+
+    @staticmethod
+    def open_html(file_path):
+        with open(file_path) as html:
+            return BeautifulSoup(html, "html.parser")
+
+    def save_items(self, scraper_name, data, column_name):
+        id = data.pop(0)
+        data_tuple = tuple(data)
+        bdd_ja_data = self.database.select_data(column_name, Scraper.TABLE_NAME, f"WHERE id = {id}")
+        if bdd_ja_data:
+            if not bdd_ja_data[0] == data_tuple:
+                if scraper_name == FirstScraper.CLASS_NAME:
+                    self.database.update_rnjapi_first_scraper_data(data_tuple + (id,))
+                else:
+                    self.database.update_rnjapi_second_scraper_data(data_tuple + (id,))
+        elif scraper_name == FirstScraper.CLASS_NAME:
+            self.database.insert_rnjapi_first_scraper_data((id,) + data_tuple)
 
 
-def create_folder_if_not_exists(folder_path):
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-
-
-# noinspection PyBroadException
-def get_page(url, method, content_path, post_data=None):
-    try:
-        if method == 'GET':
-            response = requests.get(url)
-        else:
-            response = requests.post(url, data=post_data, headers={'Accept-Encoding': ''}, stream=True)
-
-        if response.status_code == 200:
-            content = response.text
-            with open(content_path, 'w', encoding='utf-8') as file:
-                file.write(content)
-            print(f'Page {content_path} successfully downloaded.')
-        else:
-            print(f'Download failed. Status code : {response.status_code}')
-    except Exception:
-        print(f" Page {url} download error")
-
-
-def open_html(file_path):
-    with open(file_path) as html:
-        return BeautifulSoup(html, "html.parser")
-
-
-class FirstScraper:
+class FirstScraper(Scraper):
+    CLASS_NAME = "FirstScraper"
     URL = "https://juniorassociation.org/juniors-associations"
     FOLDER_PATH = "./html/"
     FILE_PATH = "./html/all_ja.html"
 
     def __init__(self):
-        create_folder_if_not_exists(self.FOLDER_PATH)
-        get_page(FirstScraper.URL, "POST", FirstScraper.FILE_PATH, {"userform": "chercher-JA"})
-        self.soup = open_html(FirstScraper.FILE_PATH)
-        self.database = Database()
-        self.database.create_rnjapi_table(TABLE_NAME)
+        Scraper.__init__(self)
+        self.create_folder_if_not_exists(self.FOLDER_PATH)
+        self.get_page(FirstScraper.URL, "POST", FirstScraper.FILE_PATH, {"userform": "chercher-JA"})
+        self.soup = self.open_html(FirstScraper.FILE_PATH)
 
     def get_items(self):
         articles = self.get_all_ja()
@@ -65,19 +84,8 @@ class FirstScraper:
             short_description = article.p.text
 
             data = [id, name, city, department_nbr, department_name, directory_link, region, short_description]
-            self.save_items(data)
-
-    def save_items(self, data):
-        id = data.pop(0)
-        data_tuple = tuple(data)
-        bdd_ja_data = self.database.select_data(
-            "name, city, department_nbr, department_name, directory_link, region, short_description",
-            TABLE_NAME, f"WHERE id = {id}")
-        if bdd_ja_data:
-            if not bdd_ja_data[0] == data_tuple:
-                self.database.update_rnjapi_first_scraper_data(data_tuple + (id,))
-        else:
-            self.database.insert_rnjapi_first_scraper_data((id,) + data_tuple)
+            self.save_items(FirstScraper.CLASS_NAME, data,
+                            "id, name, city, department_nbr, department_name, directory_link, region, short_description")
 
     def get_all_ja(self):
         articles = self.soup.findAll("article", class_="mini-fiche ja")
@@ -117,13 +125,13 @@ class FirstScraper:
         return city
 
 
-class SecondScraper:
+class SecondScraper(Scraper):
+    CLASS_NAME = "SecondScraper"
     BASE_URL = "https://juniorassociation.org/"
     FOLDER_PATH = "./html/ja/"
 
     def __init__(self):
-        self.database = Database()
-        self.database.create_rnjapi_table(TABLE_NAME)
+        Scraper.__init__(self)
         self.ja_link_and_id_list = self.database.select_data("id, directory_link", "RNJAPI")
         self.extractor = URLExtract()
 
@@ -133,8 +141,8 @@ class SecondScraper:
             link = ja_items[1]
             file_path = f"{self.FOLDER_PATH}{id}.html"
             url = f"{SecondScraper.BASE_URL}{link}"
-            get_page(url, "GET", file_path)
-            soup = open_html(file_path)
+            self.get_page(url, "GET", file_path)
+            soup = self.open_html(file_path)
 
             description = soup.find("article", class_="page-content").p.text
 
@@ -158,16 +166,8 @@ class SecondScraper:
                     final_urls_dict.get("twitter", ""), final_urls_dict.get("discord", ""),
                     str(final_urls_dict.get("other_website", "[]")), email, approval_date, mumbers_nbr]
 
-            self.save_items(data)
-
-    def save_items(self, data):
-        id = data.pop(0)
-        data_tuple = tuple(data)
-        bdd_ja_data = self.database.select_data(
-            "description, website, instagram, facebook, youtube, tiktok, twitter, discord, other_website, email, approval_date, mumbers_nbr",
-            TABLE_NAME, f"WHERE id = {id}")
-        if bdd_ja_data and not bdd_ja_data[0] == data_tuple:
-            self.database.update_rnjapi_second_scraper_data(data_tuple + (id,))
+            self.save_items(SecondScraper.CLASS_NAME, data,
+                            "description, website, instagram, facebook, youtube, tiktok, twitter, discord, other_website, email, approval_date, mumbers_nbr")
 
     # noinspection PyBroadException
     @staticmethod
