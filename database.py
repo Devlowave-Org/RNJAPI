@@ -14,49 +14,55 @@ class Database:
         department_nbr TEXT,
         department_name TEXT,
         region TEXT,
-        directory_link TEXT UNIQUE,
+        directory_link TEXT UNIQUE NOT NULL,
         short_description TEXT,
         description TEXT,
+        website TEXT,
+        instagram TEXT,
+        facebook TEXT,
+        youtube TEXT,
+        tiktok TEXT,
+        twitter TEXT,
+        discord TEXT,
+        other_website TEXT,
         email TEXT,
         approval_date INTEGER,
         mumbers_nbr INTEGER,
-        instagram INTEGER,
-        discord INTEGER,
-        facebook INTEGER,
-        youtube INTEGER,
-        other_networks TEXT,
-        website TEXT,
-        last_AllJa_update INTEGER,
-        last_JaPage_update INTEGER
+        last_update INTEGER
         )'''
         self.execute_and_commit(create_table)
 
+    def insert_rnjapi_first_scraper_data(self, data_tuple):
+        insert = f"INSERT INTO RNJAPI (id, name, city, department_nbr, department_name, directory_link, region, short_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        self.execute_and_commit_data(insert, data_tuple)
 
+    def update_rnjapi_first_scraper_data(self, data_tuple):
+        update = f"UPDATE RNJAPI SET name = ?, city = ?, department_nbr = ?, department_name = ?, directory_link = ?, region = ?, short_description = ? WHERE id = ?"
+        self.execute_and_commit_data(update, data_tuple)
 
-    def insert_rnjapi_all_ja_data(self, data_tuple):
-        insert = f'''INSERT INTO RNJAPI (id, name, city, department_nbr, department_name, directory_link, region, short_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'''
-        self.cursor.execute(insert, data_tuple)
-        self.conn.commit()
+    def update_rnjapi_second_scraper_data(self, data_tuple):
+        update = f"UPDATE RNJAPI SET description = ?, website = ?, instagram = ?, facebook = ?, youtube = ?, tiktok = ?, twitter = ?, discord = ?, other_website = ?, email = ?, approval_date = ?, mumbers_nbr = ? WHERE id = ?"
+        self.execute_and_commit_data(update, data_tuple)
 
-    def update_rnjapi_all_ja_data(self, data_tuple):
-        update = f'''UPDATE RNJAPI SET name = ?, city = ?, department_nbr = ?, department_name = ?, directory_link = ?, region = ?, short_description = ? WHERE id = ?'''
-        self.cursor.execute(update, data_tuple)
-        self.conn.commit()
+    def update_rnjapi_last_update(self, data_tuple):
+        update = f"UPDATE RNJAPI SET RNJAPI.last_update = ? WHERE id = ?"
+        self.execute_and_commit_data(update, data_tuple)
 
     def select_data(self, column_name, table_name, other_arguments=""):
         return self.cursor.execute(
-            f'''SELECT {column_name} FROM {table_name} {other_arguments}''').fetchall()
+            f"SELECT {column_name} FROM {table_name} {other_arguments}").fetchall()
 
     def delete_table(self, table_name):
-        delete_table = f'''DROP TABLE IF EXISTS {table_name}'''
+        delete_table = f"DROP TABLE IF EXISTS {table_name}"
         self.execute_and_commit(delete_table)
 
     def execute_and_commit(self, sql_command):
         self.cursor.execute(sql_command)
         self.conn.commit()
 
+    def execute_and_commit_data(self, sql_command, data_tuple):
+        self.cursor.execute(sql_command, data_tuple)
+        self.conn.commit()
+
     def close(self):
         self.conn.close()
-
-
-
