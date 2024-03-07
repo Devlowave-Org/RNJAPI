@@ -27,7 +27,7 @@ class Database:
         other_website TEXT,
         email TEXT,
         approval_date INTEGER,
-        mumbers_nbr INTEGER,
+        members_nbr INTEGER,
         last_update INTEGER
         )'''
         self.execute_and_commit(create_table)
@@ -41,11 +41,11 @@ class Database:
         self.execute_and_commit_data(update, data_tuple)
 
     def update_rnjapi_second_scraper_data(self, data_tuple):
-        update = f"UPDATE RNJAPI SET description = ?, website = ?, instagram = ?, facebook = ?, youtube = ?, tiktok = ?, twitter = ?, discord = ?, other_website = ?, email = ?, approval_date = ?, mumbers_nbr = ? WHERE id = ?"
+        update = f"UPDATE RNJAPI SET description = ?, website = ?, instagram = ?, facebook = ?, youtube = ?, tiktok = ?, twitter = ?, discord = ?, other_website = ?, email = ?, approval_date = ?, members_nbr = ? WHERE id = ?"
         self.execute_and_commit_data(update, data_tuple)
 
-    def update_rnjapi_last_update(self, data_tuple):
-        update = f"UPDATE RNJAPI SET RNJAPI.last_update = ? WHERE id = ?"
+    def update_rnjapi_last_update_column(self, data_tuple):
+        update = f"UPDATE RNJAPI SET last_update = ? WHERE id = ?"
         self.execute_and_commit_data(update, data_tuple)
 
     def select_data(self, column_name, table_name, other_arguments=""):
@@ -55,6 +55,11 @@ class Database:
     def delete_table(self, table_name):
         delete_table = f"DROP TABLE IF EXISTS {table_name}"
         self.execute_and_commit(delete_table)
+
+    def delete_row(self, table_name, row_id):
+        data_tuple = (row_id,)
+        delete_row = f"DELETE FROM {table_name} WHERE id= ?"
+        self.execute_and_commit_data(delete_row, data_tuple)
 
     def execute_and_commit(self, sql_command):
         self.cursor.execute(sql_command)

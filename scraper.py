@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from urlextract import URLExtract
 import re
+from datetime import datetime, timedelta
 
 from region import *
 from database import *
@@ -57,6 +58,33 @@ class Scraper:
         elif scraper_name == FirstScraper.CLASS_NAME:
             self.database.insert_rnjapi_first_scraper_data((id,) + data_tuple)
 
+    @staticmethod
+    def current_date():
+        now = datetime.now()
+        date_string = now.strftime("%Y-%m-%d")
+        return date_string
+
+    def update_rnjapi_last_update_column(self, id):
+        date_string = self.current_date()
+        date_tuple = (date_string, id)
+        self.database.update_rnjapi_last_update_column(date_tuple)
+
+    def delete_ja_that_no_longer_exists(self):
+        current_date = self.current_date()
+        id_and_last_update_list = self.database.select_data("id, last_update", Scraper.TABLE_NAME)
+
+        for ja in id_and_last_update_list:
+            last_update_date = ja[1]
+            id = ja[0]
+            format_date = "%Y-%m-%d"
+            date_obj1 = datetime.strptime(current_date, format_date)
+            date_obj2 = datetime.strptime(last_update_date, format_date)
+
+            difference = abs(date_obj1 - date_obj2)
+            if difference >= timedelta(days=15):
+                self.database.delete_row(Scraper.TABLE_NAME, id)
+                os.remove(f"./html/ja/{id}.html")
+
 
 class FirstScraper(Scraper):
     CLASS_NAME = "FirstScraper"
@@ -67,7 +95,7 @@ class FirstScraper(Scraper):
     def __init__(self):
         Scraper.__init__(self)
         self.create_folder_if_not_exists(self.FOLDER_PATH)
-        self.get_page(FirstScraper.URL, "POST", FirstScraper.FILE_PATH, {"userform": "chercher-JA"})
+        # self.get_page(FirstScraper.URL, "POST", FirstScraper.FILE_PATH, {"userform": "chercher-JA"})
         self.soup = self.open_html(FirstScraper.FILE_PATH)
 
     def get_items(self):
@@ -86,6 +114,7 @@ class FirstScraper(Scraper):
             data = [id, name, city, department_nbr, department_name, directory_link, region, short_description]
             self.save_items(FirstScraper.CLASS_NAME, data,
                             "id, name, city, department_nbr, department_name, directory_link, region, short_description")
+            self.update_rnjapi_last_update_column(id)
 
     def get_all_ja(self):
         articles = self.soup.findAll("article", class_="mini-fiche ja")
@@ -141,7 +170,7 @@ class SecondScraper(Scraper):
             link = ja_items[1]
             file_path = f"{self.FOLDER_PATH}{id}.html"
             url = f"{SecondScraper.BASE_URL}{link}"
-            self.get_page(url, "GET", file_path)
+            # self.get_page(url, "GET", file_path)
             soup = self.open_html(file_path)
 
             description = soup.find("article", class_="page-content").p.text
@@ -159,22 +188,23 @@ class SecondScraper(Scraper):
             final_urls_dict = website_urls_dict | social_networks_urls_dict
             email = self.detect_email(categories_dict["contact"])
             approval_date = categories_dict["approval_date"]
-            mumbers_nbr = int(categories_dict["mumbers_nbr"].strip())
+            members_nbr = int(categories_dict["members_nbr"].strip())
 
             data = [id, description, website, final_urls_dict.get("instagram", ""), final_urls_dict.get("facebook", ""),
                     final_urls_dict.get("youtube", ""), final_urls_dict.get("tiktok", ""),
                     final_urls_dict.get("twitter", ""), final_urls_dict.get("discord", ""),
-                    str(final_urls_dict.get("other_website", "[]")), email, approval_date, mumbers_nbr]
+                    str(final_urls_dict.get("other_website", "[]")), email, approval_date, members_nbr]
 
             self.save_items(SecondScraper.CLASS_NAME, data,
-                            "description, website, instagram, facebook, youtube, tiktok, twitter, discord, other_website, email, approval_date, mumbers_nbr")
+                            "description, website, instagram, facebook, youtube, tiktok, twitter, discord, other_website, email, approval_date, members_nbr")
+            self.update_rnjapi_last_update_column(id)
 
     # noinspection PyBroadException
     @staticmethod
     def get_categories(div):
         categories = ("Visitez notre site :", "Autres site, réseaux sociaux... :", "Pour nous contacter :",
                       "Date de dernière habilitation :", "Nbre d'adhérents :")
-        key = ("website", "social_networks", "contact", "approval_date", "mumbers_nbr")
+        key = ("website", "social_networks", "contact", "approval_date", "members_nbr")
         categories_dict = {}
         for string, key in zip(categories, key):
             try:
@@ -250,7 +280,5 @@ class SecondScraper(Scraper):
         return ""
 
 
-scraper1 = FirstScraper()
-scraper1.get_items()
-scraper2 = SecondScraper()
-scraper2.get_items()
+scraper = Scraper()
+scraper.delete_ja_that_no_longer_exists()
