@@ -1,56 +1,17 @@
 import sqlite3
 
 
+# ATTENTION : PROTECTION ANTI FAILLE SQL A CODER : LISTE BLANCHE
 class Database:
-    def __init__(self):
-        self.conn = sqlite3.connect('rnjapi.db')
+    def __init__(self, bdd_path):
+        self.conn = sqlite3.connect(bdd_path)
         self.cursor = self.conn.cursor()
 
-    def create_rnjapi_table(self, table_name):
-        create_table = f'''CREATE TABLE IF NOT EXISTS {table_name}(
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        city TEXT,
-        department_nbr TEXT,
-        department_name TEXT,
-        region TEXT,
-        directory_link TEXT UNIQUE NOT NULL,
-        short_description TEXT,
-        description TEXT,
-        website TEXT,
-        instagram TEXT,
-        facebook TEXT,
-        youtube TEXT,
-        tiktok TEXT,
-        twitter TEXT,
-        discord TEXT,
-        other_website TEXT,
-        email TEXT,
-        approval_date INTEGER,
-        members_nbr INTEGER,
-        last_update INTEGER
-        )'''
-        self.execute_and_commit(create_table)
+    def select_data(self, column_name, table_name, id_nbr):
+        return self.cursor.execute(f"SELECT {column_name} FROM {table_name} WHERE ID = ?", (id_nbr,)).fetchall()
 
-    def insert_rnjapi_first_scraper_data(self, data_tuple):
-        insert = f"INSERT INTO RNJAPI (id, name, city, department_nbr, department_name, directory_link, region, short_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-        self.execute_and_commit_data(insert, data_tuple)
-
-    def update_rnjapi_first_scraper_data(self, data_tuple):
-        update = f"UPDATE RNJAPI SET name = ?, city = ?, department_nbr = ?, department_name = ?, directory_link = ?, region = ?, short_description = ? WHERE id = ?"
-        self.execute_and_commit_data(update, data_tuple)
-
-    def update_rnjapi_second_scraper_data(self, data_tuple):
-        update = f"UPDATE RNJAPI SET description = ?, website = ?, instagram = ?, facebook = ?, youtube = ?, tiktok = ?, twitter = ?, discord = ?, other_website = ?, email = ?, approval_date = ?, members_nbr = ? WHERE id = ?"
-        self.execute_and_commit_data(update, data_tuple)
-
-    def update_rnjapi_last_update_column(self, data_tuple):
-        update = f"UPDATE RNJAPI SET last_update = ? WHERE id = ?"
-        self.execute_and_commit_data(update, data_tuple)
-
-    def select_data(self, column_name, table_name, other_arguments=""):
-        return self.cursor.execute(
-            f"SELECT {column_name} FROM {table_name} {other_arguments}").fetchall()
+    def select_all_data(self, table_name, id_nbr):
+        return self.cursor.execute(f"SELECT * FROM {table_name} WHERE ID = ?", (id_nbr,)).fetchone()
 
     def delete_table(self, table_name):
         delete_table = f"DROP TABLE IF EXISTS {table_name}"
@@ -67,6 +28,10 @@ class Database:
 
     def execute_and_commit_data(self, sql_command, data_tuple):
         self.cursor.execute(sql_command, data_tuple)
+        self.conn.commit()
+
+    def executemany_and_commit_data(self, sql_command, data_tuple):
+        self.cursor.executemany(sql_command, data_tuple)
         self.conn.commit()
 
     def close(self):
