@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from urlextract import URLExtract
 import re
 
-from constant import *
+from utils import *
 
 
 class Scraper:
@@ -14,21 +14,18 @@ class Scraper:
 
     @staticmethod
     def download_page(url, method, content_path, post_data=None):
-        try:
-            if method == 'GET':
-                response = requests.get(url)
-            else:
-                response = requests.post(url, data=post_data, headers={'Accept-Encoding': ''}, stream=True)
+        if method == 'GET':
+            response = requests.get(url)
+        else:
+            response = requests.post(url, data=post_data, headers={'Accept-Encoding': ''}, stream=True)
 
-            if response.status_code == 200:
-                content = response.text
-                with open(content_path, 'w', encoding='utf-8') as file:
-                    file.write(content)
-                print(f'Page {content_path} successfully downloaded.')
-            else:
-                print(f'Download failed. Status code : {response.status_code}')
-        except Exception:
-            print(f" Page {url} download error")
+        if response.status_code == 200:
+            content = response.text
+            with open(content_path, 'w', encoding='utf-8') as file:
+                file.write(content)
+            print(f'Page {content_path} successfully downloaded.')
+        else:
+            print(f'Download failed. Status code : {response.status_code}')
 
     @staticmethod
     def open_html(file_path):

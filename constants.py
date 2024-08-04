@@ -1,5 +1,10 @@
-import os
-from datetime import datetime
+TABLE_PATH = "rnjapi.db"
+BASE_TABLE_NAME = "RNJAPI_"
+DATE_FORMAT_REGEX = r"\d{2}_\d{2}_\d{4}$"
+
+COLUMNS = ["id", "name", "city", "department_nbr", "department_name", "region", "page_link", "description",
+           "website", "instagram", "facebook", "youtube", "tiktok", "twitter", "discord", "other_website", "email",
+           "approval_date", "members_nbr"]
 
 REGIONS = {
     'Auvergne-Rhône-Alpes': ['01', '03', '07', '15', '26', '38', '42', '43', '63', '69', '73', '74'],
@@ -116,13 +121,3 @@ DEPARTMENTS = {
     '95': 'Val-d\'Oise',
     '97': 'Outre-mer'
 }
-
-
-def create_folder_if_not_exists(folder_path):
-    os.makedirs(folder_path, exist_ok=True)
-
-
-def get_current_date():
-    now = datetime.now()
-    date_string = now.strftime("%d_%m_%Y")
-    return date_string
