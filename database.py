@@ -9,22 +9,35 @@ def is_valid_table(table_name):
     match = re.search(pattern, string)
     return True if match else False
 
+
 def is_valid_column(column_name):
     return True if column_name in COLUMNS else False
 
 
 class Database:
     def __init__(self, bdd_path):
-        self.conn = sqlite3.connect(bdd_path)
+        self.conn = sqlite3.connect(bdd_path, timeout=10, check_same_thread=False)
         self.cursor = self.conn.cursor()
 
-    def select_data(self, column_name, table_name, id_nbr):
+    def select_tables_name(self):
+        self.cursor.execute("SELECT name FROM sqlite_schema WHERE type='table';")
+        tables = self.cursor.fetchall()
+        table_names = [table[0] for table in tables]
+        return table_names
+
+    def select_data_column(self, table_name, column_name):
+        if is_valid_table(table_name) and is_valid_column(column_name):
+            return self.cursor.execute(f"SELECT {column_name} FROM {table_name}").fetchall()
+        else:
+            print("invalid table name or column name")
+
+    def select_data_with_id(self, column_name, table_name, id_nbr):
         if is_valid_table(table_name) and is_valid_column(column_name):
             return self.cursor.execute(f"SELECT {column_name} FROM {table_name} WHERE ID = ?", (id_nbr,)).fetchall()
         else:
             print("invalid table name or column name")
 
-    def select_row_data(self, table_name, id_nbr):
+    def select_all_data_with_id(self, table_name, id_nbr):
         if is_valid_table(table_name):
             return self.cursor.execute(f"SELECT * FROM {table_name} WHERE ID = ?", (id_nbr,)).fetchone()
         else:

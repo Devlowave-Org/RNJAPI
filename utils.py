@@ -37,3 +37,12 @@ def delete_directory_if_exist(directory_path):
 
 def rename_directory(current_path, new_path):
     os.rename(current_path, new_path)
+
+
+def get_most_recent_date(dates):
+    date_format = "%d_%m_%Y"
+    datetime_objects = [datetime.strptime(date, date_format) for date in dates]
+    most_recent_date = max(datetime_objects)
+    most_recent_date_str = most_recent_date.strftime(date_format)
+
+    return most_recent_date_str
