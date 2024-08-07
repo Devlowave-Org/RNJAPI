@@ -7,25 +7,30 @@ from utils import *
 
 
 class Scraper:
-    FOLDER_PATH = "./html/ja/"
 
-    def __init__(self):
-        create_folder_if_not_exists(self.FOLDER_PATH)
+    def __init__(self, base_path):
+        self.jas_folder_path = base_path + "ja/"
+        create_folder_if_not_exists(self.jas_folder_path)
 
     @staticmethod
-    def download_page(url, method, content_path, post_data=None):
-        if method == 'GET':
-            response = requests.get(url)
-        else:
-            response = requests.post(url, data=post_data, headers={'Accept-Encoding': ''}, stream=True)
+    def download_page(url, method, content_path, post_data=None, timeout=10):
+        try:
+            if method == 'GET':
+                response = requests.get(url, timeout=timeout)
+            else:
+                response = requests.post(url, data=post_data, headers={'Accept-Encoding': ''}, stream=True, timeout=timeout)
 
-        if response.status_code == 200:
-            content = response.text
-            with open(content_path, 'w', encoding='utf-8') as file:
-                file.write(content)
-            print(f'Page {content_path} successfully downloaded.')
-        else:
-            print(f'Download failed. Status code : {response.status_code}')
+            if response.status_code == 200:
+                content = response.text
+                with open(content_path, 'w', encoding='utf-8') as file:
+                    file.write(content)
+                print(f'Page {content_path} successfully downloaded.')
+            else:
+                print(f'Download failed. Status code: {response.status_code}')
+        except requests.exceptions.Timeout:
+            print('Download failed. The request timed out.')
+        except requests.exceptions.RequestException as e:
+            print(f'Download failed. An error occurred: {e}')
 
     @staticmethod
     def open_html(file_path):
@@ -35,22 +40,24 @@ class Scraper:
 
 class JaListScraper(Scraper):
     URL = "https://juniorassociation.org/juniors-associations"
-    FILE_PATH = "./html/all_ja.html"
+    FILE_NAME = "all_ja.html"
 
-    def __init__(self):
-        super().__init__()
-        # self.get_page(JaListScraper.URL, "POST", JaListScraper.FILE_PATH, {"userform": "chercher-JA"})
-        self.soup = self.open_html(JaListScraper.FILE_PATH)
+    def __init__(self, base_path, download):
+        super().__init__(base_path)
+        file_path = base_path + self.FILE_NAME
+        if download:
+            self.download_page(JaListScraper.URL, "POST", file_path, {"userform": "chercher-JA"})
+        self.soup = self.open_html(file_path)
 
     def get_all_ja(self):
         return self.soup.findAll("article", class_="mini-fiche ja")
 
     @staticmethod
-    def get_page_link(article):
+    def get_page_url(article):
         return article.a.get("href")
 
     def get_ja_id(self, article):
-        string = self.get_page_link(article)
+        string = self.get_page_url(article)
         match = re.search(r'(\d+)($)', string)
         return match.group(1) if match else "error getting id"
 
@@ -74,13 +81,14 @@ class JaListScraper(Scraper):
 class JaPageScraper(Scraper):
     BASE_URL = "https://juniorassociation.org/"
 
-    def __init__(self, id_nbr, link):
-        super().__init__()
-        file_path = f"{JaPageScraper.FOLDER_PATH}{id_nbr}.html"
-        url = f"{JaPageScraper.BASE_URL}{link}"
-        # self.get_page(url, "GET", file_path)
-        self.soup = self.open_html(file_path)
+    def __init__(self, id_nbr, end_url, base_path, download):
+        super().__init__(base_path)
         self.extractor = URLExtract()
+        file_path = f"{self.jas_folder_path}{id_nbr}.html"
+        url = f"{JaPageScraper.BASE_URL}{end_url}"
+        if download:
+            self.download_page(url, "GET", file_path)
+        self.soup = self.open_html(file_path)
         self.categories_dict = self.get_categories()
         self.urls_dict = self.get_urls()
 

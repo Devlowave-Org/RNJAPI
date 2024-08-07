@@ -2,7 +2,7 @@ TABLE_PATH = "rnjapi.db"
 BASE_TABLE_NAME = "RNJAPI_"
 DATE_FORMAT_REGEX = r"\d{2}_\d{2}_\d{4}$"
 
-COLUMNS = ["id", "name", "city", "department_nbr", "department_name", "region", "page_link", "description",
+COLUMNS = ["id", "name", "city", "department_nbr", "department_name", "region", "url", "description",
            "website", "instagram", "facebook", "youtube", "tiktok", "twitter", "discord", "other_website", "email",
            "approval_date", "members_nbr"]
 
