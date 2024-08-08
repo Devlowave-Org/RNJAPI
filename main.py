@@ -118,7 +118,5 @@ class CreateAndCompleteDatabase:
             print("invalid table name")
 
 
-class Main():
-    def __init__(self):
 
-        CreateAndCompleteDatabase()
+CreateAndCompleteDatabase()

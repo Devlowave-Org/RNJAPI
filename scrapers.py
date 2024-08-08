@@ -54,7 +54,7 @@ class JaListScraper(Scraper):
 
     @staticmethod
     def get_page_url(article):
-        return article.a.does_id_exist()
+        return article.a.get("href")
 
     def get_ja_id(self, article):
         string = self.get_page_url(article)

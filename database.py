@@ -27,7 +27,7 @@ class Database:
 
     def select_data_column(self, table_name, column_name):
         if is_valid_table(table_name) and is_valid_column(column_name):
-            return self.cursor.execute(f"SELECT {column_name} FROM {table_name}").fetchall()
+            return self.cursor.execute(f"SELECT {column_name} FROM {table_name} ORDER BY id").fetchall()
         else:
             print("invalid table name or column name")
 
