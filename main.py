@@ -17,7 +17,6 @@ class CreateAndCompleteDatabase:
             print("a problem occurred while downloading the ja list page")
             self.ja_list_scraper = JaListScraper(self.BASE_PATH, False)
             copy_file(f"{self.BASE_PATH}{self.ja_list_scraper.FILE_NAME}", f"{self.NEW_BASE_PATH}{self.ja_list_scraper.FILE_NAME}")
-
         self.main()
 
     def main(self):

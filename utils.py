@@ -1,6 +1,7 @@
 import os
 import shutil
 from datetime import datetime
+from itertools import zip_longest
 
 
 def create_folder_if_not_exists(folder_path):
@@ -46,3 +47,7 @@ def get_most_recent_date(dates):
     most_recent_date_str = most_recent_date.strftime(date_format)
 
     return most_recent_date_str
+
+def lists_to_dict(keys_list, values_list):
+    new_dict = {key: value for key, value in zip(keys_list, values_list)}
+    return new_dict

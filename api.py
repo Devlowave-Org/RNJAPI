@@ -27,8 +27,8 @@ class Column(Resource):
         id_tuple = database.select_data_column(table_name, "id")
         items_tuple = database.select_data_column(table_name, column_name)
         database.close()
-        items_list = [{id_nbr[0]: item[0]} for id_nbr, item in zip(id_tuple, items_tuple)]
-        return {column_name: items_list}
+        items_dict = {id_nbr[0]: item[0] for id_nbr, item in zip(id_tuple, items_tuple)}
+        return items_dict
 
 
 api.add_resource(Column, "/column/<string:column_name>")
@@ -41,8 +41,9 @@ class Row(Resource):
         table_name = get_last_table_name()
         database = Database(TABLE_PATH)
         items_tuple = database.select_all_data_with_id(table_name, id_nbr)
+        items_dict = lists_to_dict(COLUMNS, items_tuple)
         database.close()
-        return {id_nbr: items_tuple}
+        return items_dict
 
 
 api.add_resource(Row, "/row/<string:id_nbr>")
